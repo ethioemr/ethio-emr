@@ -1,87 +1,99 @@
-import { useEffect, useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { supabase } from './lib/supabase';
-import Sidebar from './components/Sidebar';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './stores/authStore';
+import Layout from './layouts/Layout';
+import Login from './pages/auth/Login';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
+import PatientDetail from './pages/PatientDetail';
 import Appointments from './pages/Appointments';
+import Consultations from './pages/Consultations';
 import Prescriptions from './pages/Prescriptions';
-import LabResults from './pages/LabResults';
+import Laboratory from './pages/Laboratory';
+import Pharmacy from './pages/Pharmacy';
 import Billing from './pages/Billing';
-import Consultation from './pages/Consultation';
-import PatientDetails from './pages/PatientDetails';
-import Login from './pages/Login';
+import BedManagement from './pages/BedManagement';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import NotFound from './pages/NotFound';
 
-type Page = 'dashboard' | 'patients' | 'appointments' | 'prescriptions' | 'lab-results' | 'billing' | 'consultation' | 'patient-details';
-
-function AppContent() {
-  const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [staffName, setStaffName] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      const fetchStaffInfo = async () => {
-        const { data } = await supabase
-          .from('users')
-          .select('full_name')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (data) setStaffName(data.full_name);
-      };
-      fetchStaffInfo();
-    }
-  }, [user]);
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuthStore();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-900 to-blue-800">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    return <Login />;
+    return <Navigate to="/login" replace />;
   }
 
-  const handleSelectPatient = (patientId: string) => {
-    setSelectedPatientId(patientId);
-    setCurrentPage('patient-details');
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        staffName={staffName}
-      />
-      <main className="flex-1 overflow-auto">
-        {currentPage === 'dashboard' && <Dashboard />}
-        {currentPage === 'patients' && <Patients onSelectPatient={handleSelectPatient} />}
-        {currentPage === 'appointments' && <Appointments />}
-        {currentPage === 'prescriptions' && <Prescriptions />}
-        {currentPage === 'lab-results' && <LabResults />}
-        {currentPage === 'billing' && <Billing />}
-        {currentPage === 'consultation' && <Consultation />}
-        {currentPage === 'patient-details' && selectedPatientId && (
-          <PatientDetails
-            patientId={selectedPatientId}
-            onBack={() => setCurrentPage('patients')}
-          />
-        )}
-      </main>
-    </div>
-  );
+  return <>{children}</>;
 }
 
 function App() {
+  const loadUser = useAuthStore((state) => state.loadUser);
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* Protected Routes */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+
+                  {/* Patient Management */}
+                  <Route path="/patients" element={<Patients />} />
+                  <Route path="/patients/:id" element={<PatientDetail />} />
+
+                  {/* Appointments */}
+                  <Route path="/appointments" element={<Appointments />} />
+
+                  {/* Clinical */}
+                  <Route path="/consultations" element={<Consultations />} />
+                  <Route path="/prescriptions" element={<Prescriptions />} />
+
+                  {/* Lab & Pharmacy */}
+                  <Route path="/laboratory" element={<Laboratory />} />
+                  <Route path="/pharmacy" element={<Pharmacy />} />
+
+                  {/* Operations */}
+                  <Route path="/billing" element={<Billing />} />
+                  <Route path="/beds" element={<BedManagement />} />
+
+                  {/* Management */}
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/settings" element={<Settings />} />
+
+                  {/* Fallback */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
