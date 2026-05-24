@@ -18,45 +18,40 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore((state) => state.user);
-  const loading = useAuthStore((state) => state.loading);
-
-  // In demo/development, allow access without auth
-  const isDevelopment = !import.meta.env.PROD;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user && !isDevelopment) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-}
-
 function App() {
+  const user = useAuthStore((state) => state.user);
   const loadUser = useAuthStore((state) => state.loadUser);
-  const loading = useAuthStore((state) => state.loading);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    let mounted = true;
 
-  if (loading) {
+    const initAuth = async () => {
+      try {
+        await loadUser();
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        if (mounted) {
+          setInitialized(true);
+        }
+      }
+    };
+
+    initAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, [loadUser]);
+
+  // Show loading only during initial auth check
+  if (!initialized) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-900 to-blue-700">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Initializing ETHIO-EMR...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-white mx-auto mb-4"></div>
+          <p className="text-white font-semibold">Loading ETHIO-EMR...</p>
         </div>
       </div>
     );
@@ -65,27 +60,34 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth Routes */}
+        {/* Public Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Protected Routes */}
-        <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-        <Route path="/patients" element={<ProtectedRoute><Layout><Patients /></Layout></ProtectedRoute>} />
-        <Route path="/patients/:id" element={<ProtectedRoute><Layout><PatientDetail /></Layout></ProtectedRoute>} />
-        <Route path="/appointments" element={<ProtectedRoute><Layout><Appointments /></Layout></ProtectedRoute>} />
-        <Route path="/consultations" element={<ProtectedRoute><Layout><Consultations /></Layout></ProtectedRoute>} />
-        <Route path="/prescriptions" element={<ProtectedRoute><Layout><Prescriptions /></Layout></ProtectedRoute>} />
-        <Route path="/laboratory" element={<ProtectedRoute><Layout><Laboratory /></Layout></ProtectedRoute>} />
-        <Route path="/pharmacy" element={<ProtectedRoute><Layout><Pharmacy /></Layout></ProtectedRoute>} />
-        <Route path="/billing" element={<ProtectedRoute><Layout><Billing /></Layout></ProtectedRoute>} />
-        <Route path="/beds" element={<ProtectedRoute><Layout><BedManagement /></Layout></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
-
-        {/* 404 */}
-        <Route path="*" element={<NotFound />} />
+        {user ? (
+          <>
+            <Route path="/" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/patients" element={<Layout><Patients /></Layout>} />
+            <Route path="/patients/:id" element={<Layout><PatientDetail /></Layout>} />
+            <Route path="/appointments" element={<Layout><Appointments /></Layout>} />
+            <Route path="/consultations" element={<Layout><Consultations /></Layout>} />
+            <Route path="/prescriptions" element={<Layout><Prescriptions /></Layout>} />
+            <Route path="/laboratory" element={<Layout><Laboratory /></Layout>} />
+            <Route path="/pharmacy" element={<Layout><Pharmacy /></Layout>} />
+            <Route path="/billing" element={<Layout><Billing /></Layout>} />
+            <Route path="/beds" element={<Layout><BedManagement /></Layout>} />
+            <Route path="/reports" element={<Layout><Reports /></Layout>} />
+            <Route path="/settings" element={<Layout><Settings /></Layout>} />
+            <Route path="*" element={<NotFound />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        )}
       </Routes>
     </BrowserRouter>
   );

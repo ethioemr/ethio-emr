@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      loading: true,
+      loading: false,
       error: null,
 
       signUp: async (email, password, fullName) => {
@@ -105,6 +105,7 @@ export const useAuthStore = create<AuthState>()(
 
       loadUser: async () => {
         try {
+          set({ loading: true });
           const { data: { user: authUser } } = await supabase.auth.getUser();
 
           if (!authUser) {
