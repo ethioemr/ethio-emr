@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Layout from './layouts/Layout';
@@ -19,20 +19,24 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
+  const loading = useAuthStore((state) => state.loading);
+
+  // In demo/development, allow access without auth
+  const isDevelopment = !import.meta.env.PROD;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600 font-medium">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user && !isDevelopment) {
     return <Navigate to="/login" replace />;
   }
 
@@ -41,10 +45,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const loadUser = useAuthStore((state) => state.loadUser);
+  const loading = useAuthStore((state) => state.loading);
 
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Initializing ETHIO-EMR...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
@@ -54,44 +70,22 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Protected Routes */}
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+        <Route path="/patients" element={<ProtectedRoute><Layout><Patients /></Layout></ProtectedRoute>} />
+        <Route path="/patients/:id" element={<ProtectedRoute><Layout><PatientDetail /></Layout></ProtectedRoute>} />
+        <Route path="/appointments" element={<ProtectedRoute><Layout><Appointments /></Layout></ProtectedRoute>} />
+        <Route path="/consultations" element={<ProtectedRoute><Layout><Consultations /></Layout></ProtectedRoute>} />
+        <Route path="/prescriptions" element={<ProtectedRoute><Layout><Prescriptions /></Layout></ProtectedRoute>} />
+        <Route path="/laboratory" element={<ProtectedRoute><Layout><Laboratory /></Layout></ProtectedRoute>} />
+        <Route path="/pharmacy" element={<ProtectedRoute><Layout><Pharmacy /></Layout></ProtectedRoute>} />
+        <Route path="/billing" element={<ProtectedRoute><Layout><Billing /></Layout></ProtectedRoute>} />
+        <Route path="/beds" element={<ProtectedRoute><Layout><BedManagement /></Layout></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
 
-                  {/* Patient Management */}
-                  <Route path="/patients" element={<Patients />} />
-                  <Route path="/patients/:id" element={<PatientDetail />} />
-
-                  {/* Appointments */}
-                  <Route path="/appointments" element={<Appointments />} />
-
-                  {/* Clinical */}
-                  <Route path="/consultations" element={<Consultations />} />
-                  <Route path="/prescriptions" element={<Prescriptions />} />
-
-                  {/* Lab & Pharmacy */}
-                  <Route path="/laboratory" element={<Laboratory />} />
-                  <Route path="/pharmacy" element={<Pharmacy />} />
-
-                  {/* Operations */}
-                  <Route path="/billing" element={<Billing />} />
-                  <Route path="/beds" element={<BedManagement />} />
-
-                  {/* Management */}
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/settings" element={<Settings />} />
-
-                  {/* Fallback */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
