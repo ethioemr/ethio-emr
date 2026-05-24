@@ -7,7 +7,7 @@ const menuItems = [
   { icon: Calendar, label: 'Appointments', path: '/appointments' },
   { icon: Stethoscope, label: 'Consultations', path: '/consultations' },
   { icon: Pill, label: 'Prescriptions', path: '/prescriptions' },
-  { icon: Flask, label: 'Laboratory', path: '/laboratory' },
+  { icon: Beaker, label: 'Laboratory', path: '/laboratory' },
   { icon: ShoppingCart, label: 'Pharmacy', path: '/pharmacy' },
   { icon: DollarSign, label: 'Billing', path: '/billing' },
   { icon: Bed, label: 'Bed Mgmt', path: '/beds' },
