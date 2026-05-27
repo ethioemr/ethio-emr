@@ -64,15 +64,23 @@ export default function Appointments() {
   const handleCreateAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .insert([{
           ...formData,
           status: 'scheduled',
           duration_minutes: 30
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Queue notification reminders for this appointment
+      if (data) {
+        await queueAppointmentNotifications(data.id);
+      }
+
       setShowModal(false);
       setFormData({
         patient_id: '',
@@ -83,8 +91,33 @@ export default function Appointments() {
         notes: ''
       });
       loadData();
+      alert('Appointment created! Patient will receive reminders based on notification settings.');
     } catch (error) {
       console.error('Error creating appointment:', error);
+      alert('Failed to create appointment');
+    }
+  };
+
+  const queueAppointmentNotifications = async (appointmentId: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notifications`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'queue',
+            appointmentId,
+          }),
+        }
+      );
+      const result = await response.json();
+      console.log('Notification queue result:', result);
+    } catch (error) {
+      console.error('Error queuing notifications:', error);
     }
   };
 
@@ -96,9 +129,36 @@ export default function Appointments() {
         .eq('id', id);
 
       if (error) throw error;
+
+      // If cancelled, also cancel pending notifications
+      if (status === 'cancelled') {
+        await cancelAppointmentNotifications(id);
+      }
+
       loadData();
     } catch (error) {
       console.error('Error updating status:', error);
+    }
+  };
+
+  const cancelAppointmentNotifications = async (appointmentId: string) => {
+    try {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notifications`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'cancel',
+            appointmentId,
+          }),
+        }
+      );
+    } catch (error) {
+      console.error('Error cancelling notifications:', error);
     }
   };
 
