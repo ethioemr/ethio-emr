@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Calendar, Stethoscope, Pill, Beaker, ShoppingCart, DollarSign, Bed, FileText, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Stethoscope, Pill, Beaker, ShoppingCart, DollarSign, Bed, FileText, Settings, UserCog } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -13,10 +14,19 @@ const menuItems = [
   { icon: Bed, label: 'Bed Mgmt', path: '/beds' },
   { icon: FileText, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
+  { icon: UserCog, label: 'User Mgmt', path: '/user-management', adminOnly: true },
 ];
 
 export default function Sidebar({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (item.adminOnly) {
+      return user?.role === 'hospital_admin' || user?.role === 'super_admin';
+    }
+    return true;
+  });
 
   return (
     <aside className="hidden lg:block w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white h-screen overflow-y-auto">
@@ -26,7 +36,7 @@ export default function Sidebar({ onClose }: { onClose: () => void }) {
       </div>
 
       <nav className="p-4 space-y-2">
-        {menuItems.map((item) => {
+        {filteredMenuItems.map((item) => {
           const Icon = item.icon;
           return (
             <button

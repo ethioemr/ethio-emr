@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { Stethoscope, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -13,10 +13,9 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    const result = await signIn(email, password);
 
-    const user = useAuthStore.getState().user;
-    if (user) {
+    if (result.success) {
       navigate('/dashboard');
     }
   };
@@ -85,7 +84,16 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
+              Register
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-xs text-gray-600 font-semibold mb-2">Demo Credentials:</p>
           <div className="space-y-1">
             <p className="text-xs text-gray-700">

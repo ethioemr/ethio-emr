@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Layout from './layouts/Layout';
 import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientDetail from './pages/PatientDetail';
@@ -45,7 +47,9 @@ function App() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route path="*" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     );
@@ -67,6 +71,7 @@ function App() {
         <Route path="/beds" element={<Layout><BedManagement /></Layout>} />
         <Route path="/reports" element={<Layout><Reports /></Layout>} />
         <Route path="/settings" element={<Layout><Settings /></Layout>} />
+        <Route path="/user-management" element={<Layout><UserManagement /></Layout>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
